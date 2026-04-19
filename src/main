@@ -1,0 +1,42 @@
+use screenshots::Screen;
+use std::process::Command;
+use std::time::Duration;
+use std::{thread, fs};
+
+fn main() {
+    println!("--- TRADUTOR V1 (MODO DIRETO) ---");
+    println!("Capture em 5 segundos...");
+    thread::sleep(Duration::from_secs(5));
+
+    // 1. Captura a tela
+    let screens = Screen::all().expect("Erro monitores");
+    let screen = screens[0]; 
+    let image = screen.capture().expect("Erro captura");
+    image.save("scan.png").unwrap();
+
+    // 2. Chama o Tesseract instalado no Windows via linha de comando
+    // O comando 'tesseract scan.png output -l eng' cria um arquivo 'output.txt'
+    let output = Command::new("tesseract")
+        .arg("scan.png")
+        .arg("output")
+        .arg("-l")
+        .arg("eng")
+        .output();
+
+    match output {
+        Ok(_) => {
+            // 3. Lê o arquivo de texto gerado
+            if let Ok(texto) = fs::read_to_string("output.txt") {
+                println!("\n--- TEXTO DETECTADO ---");
+                println!("{}", texto);
+                println!("-----------------------");
+                // Deleta os arquivos temporários para não poluir
+                let _ = fs::remove_file("output.txt");
+            }
+        },
+        Err(_) => {
+            println!("ERRO: Tesseract não encontrado no PATH.");
+            println!("Certifique-se que C:\\Program Files\\Tesseract-OCR está nas Variáveis de Ambiente.");
+        }
+    }
+}
